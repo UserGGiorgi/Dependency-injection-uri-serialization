@@ -40,9 +40,9 @@ public static class Startup
             .AddSingleton<IDataSerializer<Uri>, JsonSerializerTechnology>().UseExportDataServices(configuration, configuration["format"], configuration["mode"])
             .AddLogging(loggingBuilder =>
             {
-                loggingBuilder.ClearProviders();
-                loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-                loggingBuilder.AddNLog(configuration);
+                _ = loggingBuilder.ClearProviders();
+                _ = loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                _ = loggingBuilder.AddNLog(configuration);
             })
             .BuildServiceProvider();
     }

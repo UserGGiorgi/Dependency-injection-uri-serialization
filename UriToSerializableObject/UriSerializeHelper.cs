@@ -1,4 +1,4 @@
-﻿namespace UriSerializationHelper;
+namespace UriSerializationHelper;
 
 public static class UriSerializeHelper
 {
@@ -8,20 +8,21 @@ public static class UriSerializeHelper
         {
             Scheme = address.Scheme,
             Host = address.Host,
-            Path =
-            [
-                ..from line in address.Segments
-                where line.Length > 1
-                select line.TrimEnd('/')
-            ],
-            Query =
-            [
-                ..from query in address.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
-                let elements = query.Split('=')
-                select new QueryElement { Key = elements[0], Value = elements[1], }
-            ],
+            Path = address.Segments
+                .Where(line => line.Length > 1)
+                .Select(line => line.TrimEnd('/'))
+                .ToList(),
+            Query = address.Query.TrimStart('?')
+                .Split('&', StringSplitOptions.RemoveEmptyEntries)
+                .Select(query =>
+                {
+                    var elements = query.Split('=');
+                    return new QueryElement { Key = elements[0], Value = elements[1] };
+                })
+                .ToList(),
         };
 
         return obj;
     }
+
 }
