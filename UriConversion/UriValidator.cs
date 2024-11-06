@@ -1,4 +1,5 @@
-﻿using LogerExtensionDelegate;
+using System;
+using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Validation;
 
@@ -9,13 +10,15 @@ namespace UriConversion;
 /// </summary>
 public class UriValidator : IValidator<string>
 {
+    private readonly ILogger<UriValidator>? logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="UriValidator"/> class.
     /// </summary>
     /// <param name="logger">The logger.</param>
     public UriValidator(ILogger<UriValidator>? logger = default)
     {
-        throw new NotImplementedException();
+        this.logger = logger;
     }
 
     /// <summary>
@@ -26,6 +29,23 @@ public class UriValidator : IValidator<string>
     /// <exception cref="ArgumentNullException">Throw if source string is null.</exception>
     public bool IsValid(string? obj)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(obj);
+
+        bool isValid = Uri.TryCreate(obj, UriKind.Absolute, out Uri? validatedUri) &&
+                           (validatedUri.Scheme == Uri.UriSchemeHttp || validatedUri.Scheme == Uri.UriSchemeHttps);
+
+        if (this.logger != null)
+        {
+            if (isValid)
+            {
+                this.logger.LogInformation($"Valid URI: {obj}");
+            }
+            else
+            {
+                this.logger.LogWarning($"Invalid URI: {obj}");
+            }
+        }
+
+        return isValid;
     }
 }

@@ -1,4 +1,4 @@
-﻿using Conversion;
+using Conversion;
 using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Validation;
@@ -10,6 +10,9 @@ namespace UriConversion;
 /// </summary>
 public class UriConverter : IConverter<Uri?>
 {
+    private readonly IValidator<string>? validator;
+    private readonly ILogger<UriConverter>? logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="UriConverter"/> class.
     /// </summary>
@@ -18,7 +21,8 @@ public class UriConverter : IConverter<Uri?>
     /// <exception cref="ArgumentNullException">Throw if validator is null.</exception>
     public UriConverter(IValidator<string>? validator, ILogger<UriConverter>? logger = default)
     {
-        throw new NotImplementedException();
+        this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
+        this.logger = logger;
     }
 
     /// <summary>
@@ -29,6 +33,24 @@ public class UriConverter : IConverter<Uri?>
     /// <exception cref="ArgumentNullException">Throw if source string is null.</exception>
     public Uri? Convert(string? obj)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(obj);
+        if (this.validator.IsValid(obj))
+        {
+            try
+            {
+                var uri = new Uri(obj);
+                return uri;
+            }
+            catch (UriFormatException)
+            {
+                throw new Exception();
+            }
+        }
+        else
+        {
+            this.logger?.LogWarning($"Invalid URI string: {obj}");
+        }
+
+        return null;
     }
 }

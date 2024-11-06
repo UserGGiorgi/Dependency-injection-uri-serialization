@@ -1,4 +1,4 @@
-﻿using System.Xml;
+using System.Xml;
 using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Serialization;
@@ -12,6 +12,9 @@ namespace XmlDomWriter.Serialization;
 /// </summary>
 public class XmlDomTechnology : IDataSerializer<Uri>
 {
+    private readonly string? path;
+    private readonly ILogger<XmlDomTechnology>? logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="XmlDomTechnology"/> class.
     /// </summary>
@@ -20,7 +23,8 @@ public class XmlDomTechnology : IDataSerializer<Uri>
     /// <exception cref="ArgumentException">Throw if text reader is null or empty.</exception>
     public XmlDomTechnology(string? path, ILogger<XmlDomTechnology>? logger = default)
     {
-        throw new NotImplementedException();
+        this.path = path ?? throw new ArgumentNullException(nameof(path));
+        this.logger = logger;
     }
 
     /// <summary>
@@ -30,6 +34,32 @@ public class XmlDomTechnology : IDataSerializer<Uri>
     /// <exception cref="ArgumentNullException">Throw if the source sequence is null.</exception>
     public void Serialize(IEnumerable<Uri>? source)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(source);
+
+        try
+        {
+            this.logger?.LogInformation("Serializing URIs to XML file.");
+
+            var xmlDoc = new XmlDocument();
+
+            var root = xmlDoc.CreateElement("uri-addresses");
+            xmlDoc.AppendChild(root);
+
+            foreach (var uri in source)
+            {
+                var uriElement = xmlDoc.CreateElement("Uri");
+                uriElement.InnerText = uri.ToString();
+                root.AppendChild(uriElement);
+            }
+
+            xmlDoc.Save(path);
+
+            this.logger?.LogInformation("Serialization completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            this.logger?.LogError(ex, "An error occurred during serialization to XML: {FilePath}", path);
+            throw new Exception("An error occurred during serialization", ex);
+        }
     }
 }

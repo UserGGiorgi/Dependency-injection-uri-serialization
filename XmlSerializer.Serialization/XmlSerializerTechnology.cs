@@ -1,36 +1,105 @@
-﻿using System.Xml;
-using System.Xml.Serialization;
-using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Serialization;
-using UriSerializationHelper;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Xml.Serialization;
 
-namespace XmlSerializer.Serialization;
-
-/// <summary>
-/// Presents the serialization functionality of the sequence<see cref="IEnumerable{Uri}"/>
-/// with using XmlSerializer class.
-/// </summary>
-public class XmlSerializerTechnology : IDataSerializer<Uri>
+namespace XmlSerializer.Serialization
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="XmlSerializerTechnology"/> class.
-    /// </summary>
-    /// <param name="path">The path to json file.</param>
-    /// <param name="logger">The logger.</param>
-    /// <exception cref="ArgumentException">Throw if text reader is null or empty.</exception>
-    public XmlSerializerTechnology(string? path, ILogger<XmlSerializerTechnology>? logger = default)
+    public class XmlSerializerTechnology : IDataSerializer<Uri>
     {
-        throw new NotImplementedException();
+        private readonly string? path;
+        private readonly ILogger<XmlSerializerTechnology>? logger;
+
+        public XmlSerializerTechnology(string? path, ILogger<XmlSerializerTechnology>? logger = default)
+        {
+            this.path = path ?? throw new ArgumentNullException(nameof(path));
+            this.logger = logger;
+        }
+
+        public void Serialize(IEnumerable<Uri>? source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            try
+            {
+                this.logger?.LogInformation("Serializing URIs to XML file.");
+
+                var uriAddresses = source.Select(uri => new UriAddress
+                {
+                    Scheme = new NameElement { Name = uri.Scheme },
+                    Host = new NameElement { Name = uri.Host },
+                    Path = uri.AbsolutePath.Split('/').Where(segment => !string.IsNullOrEmpty(segment))
+                           .Select(segment => new PathSegment { Segment = segment }).ToList(),
+                    QueryParameters = string.IsNullOrEmpty(uri.Query) ? null :
+                        uri.Query.TrimStart('?').Split('&').Select(q =>
+                        {
+                            var parts = q.Split('=');
+                            return new QueryParameter { Key = parts[0], Value = parts.Length > 1 ? parts[1] : string.Empty };
+                        }).ToList(),
+                }).ToList();
+
+                var xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(UriAddresses), new XmlRootAttribute("uriAdresses"));
+
+                using (var writer = new StreamWriter(this.path))
+                {
+                    xmlSerializer.Serialize(writer, new UriAddresses { Addresses = uriAddresses });
+                }
+
+                this.logger?.LogInformation("Serialization completed successfully.");
+            }
+            catch (Exception ex)
+            {
+                this.logger?.LogError(ex, "An error occurred during serialization to XML: {FilePath}", path);
+                throw new Exception("An error occurred during serialization", ex);
+            }
+        }
     }
 
-    /// <summary>
-    /// Serializes the source sequence of Uri elements in json format.
-    /// </summary>
-    /// <param name="source">The source sequence of Uri elements.</param>
-    /// <exception cref="ArgumentNullException">Throw if the source sequence is null.</exception>
-    public void Serialize(IEnumerable<Uri>? source)
+    [XmlRoot("uriAdresses")]
+    public class UriAddresses
     {
-        throw new NotImplementedException();
+        [XmlElement("uriAdress")]
+        public List<UriAddress> Addresses { get; set; } = new List<UriAddress>();
+    }
+
+    public class UriAddress
+    {
+        [XmlElement("scheme")]
+        public NameElement Scheme { get; set; }
+
+        [XmlElement("host")]
+        public NameElement Host { get; set; }
+
+        [XmlArray("path")]
+        [XmlArrayItem("segment")]
+        public List<PathSegment> Path { get; set; } = new List<PathSegment>();
+
+        [XmlArray("query")]
+        [XmlArrayItem("parameter")]
+        public List<QueryParameter>? QueryParameters { get; set; }
+    }
+
+    public class NameElement
+    {
+        [XmlAttribute("name")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class PathSegment
+    {
+        [XmlText]
+        public string Segment { get; set; } = string.Empty;
+    }
+
+    public class QueryParameter
+    {
+        [XmlAttribute("key")]
+        public string Key { get; set; } = string.Empty;
+
+        [XmlAttribute("value")]
+        public string Value { get; set; } = string.Empty;
     }
 }
