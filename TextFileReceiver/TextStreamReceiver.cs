@@ -8,6 +8,12 @@ namespace TextFileReceiver;
 /// </summary>
 public class TextStreamReceiver : IDataReceiver
 {
+    private static readonly Action<ILogger, string, Exception?> LogFileNotFound =
+        LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(1, nameof(TextStreamReceiver)),
+            "File not found: {FilePath}");
+
     private readonly string? path;
     private readonly ILogger<TextStreamReceiver>? logger;
 
@@ -31,13 +37,11 @@ public class TextStreamReceiver : IDataReceiver
     {
         if (!File.Exists(this.path))
         {
-            this.logger?.LogError("File not found: {FilePath}", this.path);
+            LogFileNotFound(this.logger, this.path, null);
             throw new FileNotFoundException("The specified file was not found.", this.path);
         }
 
         var lines = new List<string>();
-
-        this.logger?.LogInformation("Reading lines from file: {FilePath}", this.path);
         using (var reader = new StreamReader(this.path))
         {
             string? line;

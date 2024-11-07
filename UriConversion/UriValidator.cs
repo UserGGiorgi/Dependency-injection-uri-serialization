@@ -1,5 +1,3 @@
-using System;
-using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Validation;
 
@@ -10,6 +8,12 @@ namespace UriConversion;
 /// </summary>
 public class UriValidator : IValidator<string>
 {
+    private static readonly Action<ILogger, string, Exception?> LogUri =
+        LoggerMessage.Define<string>(
+            LogLevel.Information,
+            new EventId(1, nameof(UriValidator)),
+            "Invalid URI: {Uri}");
+
     private readonly ILogger<UriValidator>? logger;
 
     /// <summary>
@@ -36,13 +40,9 @@ public class UriValidator : IValidator<string>
 
         if (this.logger != null)
         {
-            if (isValid)
+            if (!isValid)
             {
-                this.logger.LogInformation($"Valid URI: {obj}");
-            }
-            else
-            {
-                this.logger.LogWarning($"Invalid URI: {obj}");
+                LogUri(this.logger, obj, null);
             }
         }
 

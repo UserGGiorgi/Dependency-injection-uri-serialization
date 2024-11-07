@@ -36,15 +36,15 @@ public class ExportDataService<T>
     /// </summary>
     public void Run()
     {
-        IEnumerable<string> data = this.receiver.Receive();
+        List<string> data = this.receiver.Receive().ToList();
 
-        if (data == null || !data.Any())
+        if (data.Count == 0)
         {
             Console.WriteLine("No data received.");
             return;
         }
 
-        List<T>? convertedData =[];
+        List<T>? convertedData = new List<T>();
 
         foreach (var item in data)
         {
