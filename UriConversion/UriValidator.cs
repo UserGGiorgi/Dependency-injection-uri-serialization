@@ -38,12 +38,9 @@ public class UriValidator : IValidator<string>
         bool isValid = Uri.TryCreate(obj, UriKind.Absolute, out Uri? validatedUri) &&
                            (validatedUri.Scheme == Uri.UriSchemeHttp || validatedUri.Scheme == Uri.UriSchemeHttps);
 
-        if (this.logger != null)
+        if (this.logger != null && !isValid)
         {
-            if (!isValid)
-            {
-                LogUri(this.logger, obj, null);
-            }
+            LogUri(this.logger, obj, null);
         }
 
         return isValid;
