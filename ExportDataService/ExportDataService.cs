@@ -91,6 +91,7 @@ public class ExportDataService<T>
             catch (Exception ex)
             {
                 Console.WriteLine($"IO error during serialization: {ex.Message}");
+                throw new Exception(ex.Message);
             }
         }
         else
