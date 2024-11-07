@@ -1,5 +1,6 @@
 using Conversion;
 using DataReceiving;
+using LogerExtensionDelegate;
 using Serialization;
 
 namespace ExportDataService;
@@ -12,7 +13,7 @@ public class ExportDataService<T>
 {
     private readonly IDataReceiver receiver;
     private readonly IDataSerializer<T> serializer;
-    private readonly IConverter<T> converter;
+    private readonly IConverter<T?> converter;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExportDataService{T}"/> class.
@@ -21,7 +22,7 @@ public class ExportDataService<T>
     /// <param name="serializer">The data serializer.</param>
     /// <param name="converter">The data convertor.</param>
     /// <exception cref="ArgumentNullException">Trow if receiver, writer or converter is null.</exception>
-    public ExportDataService(IDataReceiver receiver, IDataSerializer<T> serializer, IConverter<T> converter)
+    public ExportDataService(IDataReceiver receiver, IDataSerializer<T> serializer, IConverter<T?> converter)
     {
         this.receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
         this.serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
@@ -43,7 +44,7 @@ public class ExportDataService<T>
             return;
         }
 
-        List<T> convertedData = new List<T>();
+        List<T>? convertedData =[];
 
         foreach (var item in data)
         {
@@ -91,7 +92,7 @@ public class ExportDataService<T>
             catch (Exception ex)
             {
                 Console.WriteLine($"IO error during serialization: {ex.Message}");
-                throw new Exception(ex.Message);
+                throw new LogerExtensionException(ex.Message);
             }
         }
         else

@@ -1,17 +1,19 @@
+using System.Xml.Serialization;
+using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Serialization;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Xml.Serialization;
 using UriSerializationHelper;
-using static UriSerializationHelper.UriAddress;
 
 namespace XmlSerializer.Serialization
 {
     public class XmlSerializerTechnology : IDataSerializer<Uri>
     {
+        private static readonly Action<ILogger, Exception, string> LogSerializationError =
+        (Action<ILogger, Exception, string>)LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(1, nameof(XmlSerializerTechnology)),
+            "An error occurred during serialization to XML: {FilePath}");
+
         private readonly string? path;
         private readonly ILogger<XmlSerializerTechnology>? logger;
 
@@ -27,25 +29,18 @@ namespace XmlSerializer.Serialization
 
             try
             {
-                this.logger?.LogInformation("Serializing URIs to XML file.");
-
-                // Using the extension method to convert Uri to UriAddress
                 var uriAddresses = source.Select(uri => uri.ToSerializableObject()).ToList();
 
                 var xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(UriContainer), new XmlRootAttribute("uriAdresses"));
 
-                using (var writer = new StreamWriter(this.path))
-                {
-                    var uriContainer = new UriContainer(uriAddresses);
-                    xmlSerializer.Serialize(writer, uriContainer);
-                }
-
-                this.logger?.LogInformation("Serialization completed successfully.");
+                using var writer = new StreamWriter(this.path);
+                var uriContainer = new UriContainer(uriAddresses);
+                xmlSerializer.Serialize(writer, uriContainer);
             }
             catch (Exception ex)
             {
-                this.logger?.LogError(ex, "An error occurred during serialization to XML: {FilePath}", path);
-                throw new Exception("An error occurred during serialization", ex);
+                LogSerializationError(this.logger, ex, this.path ?? "Unknown path");
+                throw new LogerExtensionException(ex.Message);
             }
         }
     }

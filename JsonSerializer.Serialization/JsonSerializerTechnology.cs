@@ -1,7 +1,8 @@
-using Microsoft.Extensions.Logging;
-using Serialization;
 using System.Text.Json;
 using System.Web;
+using LogerExtensionDelegate;
+using Microsoft.Extensions.Logging;
+using Serialization;
 
 namespace JsonSerializer.Serialization
 {
@@ -11,6 +12,12 @@ namespace JsonSerializer.Serialization
     /// </summary>
     public class JsonSerializerTechnology : IDataSerializer<Uri>
     {
+        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        };
+
         private readonly string? path;
         private readonly ILogger<JsonSerializerTechnology>? logger;
 
@@ -56,13 +63,7 @@ namespace JsonSerializer.Serialization
                     };
                 }).ToList();
 
-                var jsonOptions = new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-                };
-
-                var json = System.Text.Json.JsonSerializer.Serialize(transformedUris, jsonOptions);
+                var json = System.Text.Json.JsonSerializer.Serialize(transformedUris, JsonOptions);
 
                 File.WriteAllText(this.path, json);
 
@@ -71,7 +72,7 @@ namespace JsonSerializer.Serialization
             catch (Exception ex)
             {
                 this.logger?.LogError(ex, "An error occurred during serialization");
-                throw new Exception("An error occurred during serialization", ex);
+                throw new LogerExtensionException(ex.Message);
             }
         }
     }

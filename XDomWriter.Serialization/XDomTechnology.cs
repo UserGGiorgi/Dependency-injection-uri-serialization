@@ -2,7 +2,6 @@ using System.Xml.Linq;
 using LogerExtensionDelegate;
 using Microsoft.Extensions.Logging;
 using Serialization;
-using UriSerializationHelper;
 
 namespace XDomWriter.Serialization;
 
@@ -12,6 +11,12 @@ namespace XDomWriter.Serialization;
 /// </summary>
 public class XDomTechnology : IDataSerializer<Uri>
 {
+    private static readonly Action<ILogger, Exception, string> LogSerializationError =
+(Action<ILogger, Exception, string>)LoggerMessage.Define<string>(
+    LogLevel.Error,
+    new EventId(1, nameof(XDomTechnology)),
+    "An error occurred during serialization to XML: {FilePath}");
+
     private readonly string? path;
     private readonly ILogger<XDomTechnology>? logger;
 
@@ -38,40 +43,36 @@ public class XDomTechnology : IDataSerializer<Uri>
 
         try
         {
-            this.logger?.LogInformation("Serializing URIs to XML file.");
-
-            // Create the root element <uri-addresses>
             var root = new XElement("uri-addresses");
 
             foreach (var uri in source)
             {
-                // Create <uri-address> element with sub-elements for scheme, host, path, and query
-                var uriElement = new XElement("uri-address",
+                var uriElement = new XElement(
+                    "uri-address",
                     new XElement("scheme", new XAttribute("name", uri.Scheme)),
                     new XElement("host", new XAttribute("name", uri.Host)),
-                    new XElement("path",
+                    new XElement(
+                        "path",
                         uri.AbsolutePath.Split('/')
                             .Where(segment => !string.IsNullOrEmpty(segment))
-                            .Select(segment => new XElement("segment", segment))
-                    )
-                );
+                            .Select(segment => new XElement("segment", segment))));
 
-                // Add query parameters if present
                 if (!string.IsNullOrEmpty(uri.Query))
                 {
-                    var queryElement = new XElement("query",
+                    var queryElement = new XElement(
+                        "query",
                         uri.Query.TrimStart('?').Split('&')
                             .Select(param =>
                             {
                                 var parts = param.Split('=');
                                 return parts.Length == 2
-                                    ? new XElement("parameter",
+                                    ? new XElement(
+                                        "parameter",
                                         new XAttribute("key", parts[0]),
                                         new XAttribute("value", parts[1]))
                                     : null;
                             })
-                            .Where(x => x != null) // Filter out any null elements
-                    );
+                            .Where(x => x != null));
 
                     uriElement.Add(queryElement);
                 }
@@ -79,16 +80,13 @@ public class XDomTechnology : IDataSerializer<Uri>
                 root.Add(uriElement);
             }
 
-            // Create the XDocument and save to the specified path
             var xDoc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), root);
             xDoc.Save(this.path);
-
-            this.logger?.LogInformation("Serialization completed successfully.");
         }
         catch (Exception ex)
         {
-            this.logger?.LogError(ex, "An error occurred during serialization to XML: {FilePath}", this.path);
-            throw new Exception("An error occurred during serialization", ex);
+            LogSerializationError(this.logger, ex, this.path ?? "Unknown path");
+            throw new LogerExtensionException(ex.Message);
         }
     }
 }

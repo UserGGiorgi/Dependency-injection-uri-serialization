@@ -10,6 +10,12 @@ namespace UriConversion;
 /// </summary>
 public class UriConverter : IConverter<Uri?>
 {
+    private static readonly Action<ILogger, Exception, string> LogSerializationError =
+        (Action<ILogger, Exception, string>)LoggerMessage.Define<string>(
+            LogLevel.Error,
+            new EventId(1, nameof(UriConverter)),
+            "An error occurred while converting to URI: {SourceString}");
+
     private readonly IValidator<string>? validator;
     private readonly ILogger<UriConverter>? logger;
 
@@ -33,22 +39,26 @@ public class UriConverter : IConverter<Uri?>
     /// <exception cref="ArgumentNullException">Throw if source string is null.</exception>
     public Uri? Convert(string? obj)
     {
-        ArgumentNullException.ThrowIfNull(obj);
-        if (this.validator.IsValid(obj))
+        try
         {
-            try
+            ArgumentNullException.ThrowIfNull(this.validator);
+            if (this.validator.IsValid(obj))
             {
-                var uri = new Uri(obj);
-                return uri;
-            }
-            catch (UriFormatException)
-            {
-                throw new Exception();
+                try
+                {
+                    var uri = new Uri(obj);
+                    return uri;
+                }
+                catch (UriFormatException ex)
+                {
+                    throw new LogerExtensionException(ex.Message);
+                }
             }
         }
-        else
+        catch (Exception ex)
         {
-            this.logger?.LogWarning($"Invalid URI string: {obj}");
+            LogSerializationError(this.logger, ex, obj);
+            throw new LogerExtensionException(ex.Message);
         }
 
         return null;

@@ -11,9 +11,9 @@ public static class Program
 {
     public static int Main()
     {
-        string SourceText = @"C:\Users\Giorgi\source\repos\dependency-injection-uri-serialization\ExportDataService.Tests\uri-addresses.txt";
-        string XmlActual = @"C:\Users\Giorgi\source\repos\dependency-injection-uri-serialization\ExportDataService.Tests\bin\Debug\net8.0\uri-Addresses.xml";
-        string JsonActual = @"C:\Users\Giorgi\source\repos\dependency-injection-uri-serialization\ExportDataService.Tests\bin\Debug\net8.0\uri-addresses.json";
+        string sourceText = @"C:\Users\Giorgi\source\repos\dependency-injection-uri-serialization\ExportDataService.Tests\uri-addresses.txt";
+        string xmlActual = @"C:\Users\Giorgi\source\repos\dependency-injection-uri-serialization\ExportDataService.Tests\bin\Debug\net8.0\uri-Addresses.xml";
+        string jsonActual = @"C:\Users\Giorgi\source\repos\dependency-injection-uri-serialization\ExportDataService.Tests\bin\Debug\net8.0\uri-addresses.json";
 
         var provider = Startup.CreateServiceProvider();
 
@@ -26,9 +26,9 @@ public static class Program
 
         var validatior = new UriValidator();
         var converter = new UriConverter(validatior);
-        var reciever = new TextStreamReceiver(SourceText);
-        var jsonSerilizer = new JsonSerializerTechnology(JsonActual);
-        var xmlSerilizer = new XmlSerializerTechnology(XmlActual);
+        var reciever = new TextStreamReceiver(sourceText);
+        var jsonSerilizer = new JsonSerializerTechnology(jsonActual);
+        var xmlSerilizer = new XmlSerializerTechnology(xmlActual);
 
         var dataService = new ExportDataService<Uri>(reciever, jsonSerilizer, converter);
         dataService.Run();
